@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<con:soapui-project id="7abf090f-857d-42e6-8c82-b088d6f56db0" activeEnvironment="Default" name="Practice" resourceRoot="" soapui-version="5.2.0" abortOnError="false" runType="SEQUENTIAL" xmlns:con="http://eviware.com/soapui/config"><con:settings/><con:interface xsi:type="con:RestService" id="8b4341c1-e0a5-4ca9-a2ce-989385c389fa" wadlVersion="http://wadl.dev.java.net/2009/02" name="http://maps.googleapis.com" type="rest" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:settings/><con:definitionCache/><con:endpoints><con:endpoint>http://maps.googleapis.com</con:endpoint></con:endpoints><con:resource name="Xml" path="/maps/api/geocode/xml" id="314049f9-3a2f-455f-be53-76de42094466"><con:settings/><con:parameters><con:parameter><con:name>address</con:name><con:value>1600 Amphitheatre Parkway, Mountain View, CA</con:value><con:style>QUERY</con:style><con:default>1600 Amphitheatre Parkway, Mountain View, CA</con:default><con:path xsi:nil="true"/><con:description xsi:nil="true"/></con:parameter><con:parameter><con:name>sensor</con:name><con:value>false</con:value><con:style>QUERY</con:style><con:default>false</con:default><con:path xsi:nil="true"/><con:description xsi:nil="true"/></con:parameter></con:parameters><con:method name="Xml" id="1e6c083d-45f8-4484-80f7-6870ebfb2f1b" method="GET"><con:settings/><con:parameters/><con:representation type="RESPONSE"><con:mediaType>application/xml; charset=UTF-8</con:mediaType><con:status>200</con:status><con:params/><con:element>GeocodeResponse</con:element></con:representation><con:request name="Request 1" id="46b64fa1-11bf-4c8c-a38b-55870f4e8e63" mediaType="application/json"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/></con:setting></con:settings><con:endpoint>http://maps.googleapis.com</con:endpoint><con:request/><con:originalUri>http://maps.googleapis.com/maps/api/geocode/xml</con:originalUri><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters><entry key="address" value="Chennai" xmlns="http://eviware.com/soapui/config"/></con:parameters><con:parameterOrder><con:entry>address</con:entry><con:entry>sensor</con:entry></con:parameterOrder></con:request></con:method></con:resource></con:interface><con:restMockService id="fade4dfb-3f2a-45ba-b623-ea21b30d75a6" port="9090" path="/" host="IND-PUN-LAP-003" name="PaytmService" docroot=""><con:settings/><con:properties/><con:onRequestScript>import groovy.sql.Sql
+
+try{
+           log.info "Establishing the new SQL connection"
+            def  connection = Sql.newInstance("jdbc:mysql://localhost:3306/billing_service","root","","com.mysql.jdbc.Driver")
+            context.setProperty("dbConn", connection)
+  	                    }
+  	catch (Exception ex)
+  	{
+  		log.error "sql connection can not be established"
+  		}
+ 
+
+ 	
+ 
+ </con:onRequestScript><con:restMockAction name="/paytm/services" method="GET" resourcePath="/paytm/services" id="f58b9b51-4410-461b-b9cf-117e58d4e854"><con:settings/><con:defaultResponse xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/><con:dispatchStyle>SCRIPT</con:dispatchStyle><con:dispatchPath>import groovy.sql.Sql
+
+Map queryParamMap  = new HashMap();
+
+//Get request URL parameters
+def queryString = mockRequest.getHttpRequest().getQueryString()
+
+//Tokenize the request URL parameters
+def params=queryString.split("&amp;")
+for(i=0;i&lt;params.size();i++)
+{
+	def paramset=params[i].split("=")	
+	queryParamMap.put(paramset[0],paramset[1])
+}
+
+//get phone number/amount/merchant from request URI params
+def userphonenumber=queryParamMap.get("phonenumber")
+def amounttobecharged=queryParamMap.get("amount")
+def merchantname=queryParamMap.get("merchant")
+
+//phone number/amount/merchant is set to property context
+context.setProperty("phonenumber",userphonenumber)
+context.setProperty("amountcharged",amounttobecharged)
+context.setProperty("merchant",merchantname)
+
+//get DB conneciton  object
+def sql=context.dbConn
+  query="select trnx_id,response_status from paytm_wallet where merchant_name='"+merchantname+ "' and phone_number="+userphonenumber+" and  amount_charged="+amounttobecharged
+  log.info query
+     sql.eachRow(query)
+     {   		row ->       
+               context.setProperty("trnxid",(row[0]))
+   		  	context.setProperty("status",(row[1]))   	
+   		  					   		
+     }
+    
+
+    return "PaytmResponse"</con:dispatchPath><con:response name="PaytmResponse" id="ddbbd85f-e69e-4249-bd0d-261c2ef54cae" httpResponseStatus="200"><con:settings/><con:responseContent><![CDATA[<paytm>
+<trnxid>${#trnxid}</trnxid>
+<amountcharged>${#amountcharged}</amountcharged>
+<phonenumber>${#phonenumber}</phonenumber>
+<status>${#status}</status>
+<merchant>${#merchant}</merchant>
+</paytm>]]></con:responseContent></con:response></con:restMockAction></con:restMockService><con:properties><con:property><con:name>trnxid</con:name><con:value/></con:property><con:property><con:name>amountcharged</con:name><con:value/></con:property><con:property><con:name>phonenumber</con:name><con:value/></con:property><con:property><con:name>status</con:name><con:value/></con:property><con:property><con:name>merchant</con:name></con:property></con:properties><con:wssContainer/><con:oAuth2ProfileContainer/><con:sensitiveInformation/></con:soapui-project>
